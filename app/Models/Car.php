@@ -20,4 +20,9 @@ class Car extends Model
     {
         return $this->hasMany(CarImage::class);
     }
+
+    protected $fillable = [
+    'dealer_id', 'make', 'model', 'year', 'price', 'vin', 'slug', 'fuel_type'
+    ];
+
 }
