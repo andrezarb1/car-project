@@ -10,8 +10,11 @@ class Dealer extends Model
 {
     use HasFactory;
 
+    protected $fillable = ['name', 'slug', 'location', 'email'];
+
     public function cars()
     {
         return $this->hasMany(Car::class);
     }
 }
+
