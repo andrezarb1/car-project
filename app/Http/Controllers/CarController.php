@@ -6,6 +6,8 @@ use App\Models\Car;
 use App\Models\Dealer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\CarImage;
+
 
 class CarController extends Controller
 {
@@ -58,11 +60,25 @@ class CarController extends Controller
             'price'     => 'required|numeric|min:0',
             'vin'       => 'required|string|max:255|unique:cars,vin',
             'fuel_type' => 'nullable|string|max:255',
+            'images'   => 'nullable|array',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
+
         ]);
 
         $validated['slug'] = $this->uniqueSlug($validated['make'], $validated['model'], $validated['year']);
 
-        Car::create($validated);
+        $car = Car::create($validated);
+
+        // Save uploaded images (if any)
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('cars', 'public'); // storage/app/public/cars
+                CarImage::create([
+                    'car_id' => $car->id,
+                    'image_path' => $path,
+                ]);
+            }
+        }
 
         return redirect()->route('cars.index')
             ->with('success', 'Car created successfully!');
@@ -92,11 +108,25 @@ class CarController extends Controller
             'price'     => 'required|numeric|min:0',
             'vin'       => 'required|string|max:255|unique:cars,vin,' . $car->id,
             'fuel_type' => 'nullable|string|max:255',
+            'images'   => 'nullable|array',
+            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
+
         ]);
 
         $validated['slug'] = $this->uniqueSlug($validated['make'], $validated['model'], $validated['year'], $car->id);
 
         $car->update($validated);
+
+        // Save uploaded images (if any)
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $image) {
+                $path = $image->store('cars', 'public');
+                CarImage::create([
+                    'car_id' => $car->id,
+                    'image_path' => $path,
+                ]);
+            }
+        }
 
         return redirect()->route('cars.index')
             ->with('success', 'Car updated successfully!');

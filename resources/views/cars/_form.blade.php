@@ -50,4 +50,13 @@
                value="{{ old('vin', $car->vin ?? '') }}">
         <div class="form-text">We’ll validate VIN via external API later.</div>
     </div>
+
+    <div class="mb-3">
+    <label class="form-label">Car Images</label>
+    <input type="file" name="images[]" class="form-control" multiple accept="image/*">
+    <div class="form-text">You can upload multiple images (jpg/png/webp). Max 2MB each.
+        
+    </div>
+    </div>
+
 </div>

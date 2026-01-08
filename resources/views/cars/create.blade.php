@@ -5,7 +5,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form action="{{ route('cars.store') }}" method="POST">
+        <form action="{{ route('cars.store') }}" method="POST"  enctype="multipart/form-data">
             @csrf
             @include('cars._form', ['car' => new \App\Models\Car(), 'dealers' => $dealers])
             <button class="btn btn-primary" type="submit">Create</button>

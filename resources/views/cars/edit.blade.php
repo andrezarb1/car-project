@@ -5,7 +5,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form action="{{ route('cars.update', $car) }}" method="POST">
+        <form action="{{ route('cars.update', $car) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             @include('cars._form', ['car' => $car, 'dealers' => $dealers])
