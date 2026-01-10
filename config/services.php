@@ -31,4 +31,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'vin' => [
+    'enabled' => env('VIN_API_ENABLED', false),
+    'url' => env('VIN_API_URL', 'https://vpic.nhtsa.dot.gov/api/vehicles/decodevinvaluesextended/'),
+    ],
+
+
 ];

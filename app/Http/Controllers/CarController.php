@@ -7,6 +7,7 @@ use App\Models\Dealer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\CarImage;
+use App\Services\VinValidationService;
 
 
 class CarController extends Controller
@@ -62,8 +63,19 @@ class CarController extends Controller
             'fuel_type' => 'nullable|string|max:255',
             'images'   => 'nullable|array',
             'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
-
         ]);
+
+        $vinService = new VinValidationService();
+
+        if (!$vinService->isValidFormat($validated['vin'])) {
+            return back()->withInput()->withErrors(['vin' => 'VIN format is invalid (must be 17 chars, no I/O/Q).']);
+        }
+
+        $apiResult = $vinService->validateWithApi($validated['vin']);
+        if (!$apiResult['ok']) {
+            return back()->withInput()->withErrors(['vin' => 'VIN failed validation: ' . $apiResult['message']]);
+        }
+
 
         $validated['slug'] = $this->uniqueSlug($validated['make'], $validated['model'], $validated['year']);
 
@@ -112,6 +124,18 @@ class CarController extends Controller
             'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
 
         ]);
+
+        $vinService = new VinValidationService();
+
+        if (!$vinService->isValidFormat($validated['vin'])) {
+            return back()->withInput()->withErrors(['vin' => 'VIN format is invalid (must be 17 chars, no I/O/Q).']);
+        }
+
+        $apiResult = $vinService->validateWithApi($validated['vin']);
+        if (!$apiResult['ok']) {
+            return back()->withInput()->withErrors(['vin' => 'VIN failed validation: ' . $apiResult['message']]);
+        }
+
 
         $validated['slug'] = $this->uniqueSlug($validated['make'], $validated['model'], $validated['year'], $car->id);
 
