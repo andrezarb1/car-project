@@ -46,9 +46,15 @@
 
     <div class="col-md-4 mb-3">
         <label class="form-label">VIN *</label>
-        <input type="text" name="vin" class="form-control" required
-               value="{{ old('vin', $car->vin ?? '') }}">
-        <div class="form-text">We’ll validate VIN via external API later.</div>
+        <input id="vinInput" type="text" name="vin" class="form-control" required
+        value="{{ old('vin', $car->vin ?? '') }}">
+        <div class="mt-2 d-flex gap-2">
+        <button type="button" id="validateVinBtn" class="btn btn-outline-dark btn-sm">
+            Validate VIN
+        </button>
+        <div id="vinStatus" class="small"></div>
+</div>
+
     </div>
 
     <div class="mb-3">
@@ -60,3 +66,49 @@
     </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const btn = document.getElementById('validateVinBtn');
+    const vinInput = document.getElementById('vinInput');
+    const vinStatus = document.getElementById('vinStatus');
+
+    if (!btn || !vinInput || !vinStatus) return;
+
+    btn.addEventListener('click', async () => {
+        const vin = (vinInput.value || '').trim();
+
+        vinStatus.textContent = '';
+        btn.disabled = true;
+        btn.textContent = 'Validating...';
+
+        try {
+            const res = await fetch("{{ url('/vin/validate') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify({ vin })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                vinStatus.innerHTML = `<span class="text-danger">${data.message || 'VIN validation failed.'}</span>`;
+            } else {
+                vinStatus.innerHTML = data.ok
+                    ? `<span class="text-success">${data.message}</span>`
+                    : `<span class="text-danger">${data.message}</span>`;
+            }
+        } catch (e) {
+            vinStatus.innerHTML = `<span class="text-danger">Could not validate VIN (network/server error).</span>`;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Validate VIN';
+        }
+    });
+});
+</script>
+
