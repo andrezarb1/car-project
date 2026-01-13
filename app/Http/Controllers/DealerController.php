@@ -35,10 +35,11 @@ class DealerController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'     => 'required|string|max:255',
-            'location' => 'nullable|string|max:255',
-            'email'    => 'nullable|email|max:255',
+            'name' => 'required|string|max:255',
+            'location' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:dealers,email',
         ]);
+
 
         // SEO-friendly slug from name
         $validated['slug'] = $this->uniqueSlugFromName($validated['name']);
@@ -61,10 +62,10 @@ class DealerController extends Controller
 
     public function update(Request $request, Dealer $dealer)
     {
-        $validated = $request->validate([
+        $validated = $validated = $request->validate([
             'name'     => 'required|string|max:255',
-            'location' => 'nullable|string|max:255',
-            'email'    => 'nullable|email|max:255',
+            'location' => 'required|string|max:255',
+            'email'    => 'required|email|max:255|unique:dealers,email,' . $dealer->id,
         ]);
 
         $validated['slug'] = $this->uniqueSlugFromName($validated['name'], $dealer->id);

@@ -5,13 +5,12 @@
 </div>
 
 <div class="mb-3">
-    <label class="form-label">Location</label>
-    <input type="text" name="location" class="form-control"
-           value="{{ old('location', $dealer->location ?? '') }}">
-</div>
+    <label class="form-label">Location *</label>
+    <input type="text" name="location" class="form-control" required
+    value="{{ old('location', $dealer->location ?? '') }}">
 
 <div class="mb-3">
-    <label class="form-label">Email</label>
-    <input type="email" name="email" class="form-control"
+    <label class="form-label">Email *</label>
+    <input type="email" name="email" class="form-control" required
            value="{{ old('email', $dealer->email ?? '') }}">
 </div>
