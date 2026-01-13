@@ -24,13 +24,17 @@
             <div class="col-md-4">
                 <label class="form-label">Fuel Type</label>
                 <select name="fuel_type" class="form-select">
-                    <option value="">All</option>
-                    @foreach($fuelTypes as $ft)
-                        <option value="{{ $ft }}" {{ request('fuel_type') === $ft ? 'selected' : '' }}>
-                            {{ $ft }}
-                        </option>
-                    @endforeach
-                </select>
+                <option value="">All</option>
+                @php
+                    $fuelOptions = ['petrol', 'diesel', 'hybrid', 'electric'];
+                    $selectedFuel = request('fuel_type');
+                @endphp
+                @foreach($fuelOptions as $fuel)
+                    <option value="{{ $fuel }}" {{ $selectedFuel === $fuel ? 'selected' : '' }}>
+                        {{ ucfirst($fuel) }}
+                    </option>
+                @endforeach
+            </select>
             </div>
 
             <div class="col-md-4 d-flex gap-2">

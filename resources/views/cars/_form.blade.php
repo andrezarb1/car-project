@@ -39,10 +39,28 @@
     </div>
 
     <div class="col-md-4 mb-3">
-        <label class="form-label">Fuel Type</label>
-        <input type="text" name="fuel_type" class="form-control"
-               value="{{ old('fuel_type', $car->fuel_type ?? '') }}" placeholder="Petrol / Diesel / Hybrid / Electric">
-    </div>
+    <label class="form-label">Fuel Type *</label>
+    <select name="fuel_type" class="form-select" required>
+        <option value="">-- Select fuel type --</option>
+
+        @php
+            $options = [
+                'petrol' => 'Petrol',
+                'diesel' => 'Diesel',
+                'hybrid' => 'Hybrid',
+                'electric' => 'Electric',
+            ];
+            $current = old('fuel_type', $car->fuel_type ?? '');
+        @endphp
+
+        @foreach($options as $value => $label)
+            <option value="{{ $value }}" {{ $current === $value ? 'selected' : '' }}>
+                {{ $label }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
 
     <div class="col-md-4 mb-3">
         <label class="form-label">VIN *</label>

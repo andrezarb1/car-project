@@ -60,7 +60,7 @@ class CarController extends Controller
             'year'      => 'required|integer|min:1950|max:' . (date('Y') + 1),
             'price'     => 'required|numeric|min:0',
             'vin'       => 'required|string|max:255|unique:cars,vin',
-            'fuel_type' => 'nullable|string|max:255',
+            'fuel_type' => 'required|in:petrol,diesel,hybrid,electric',
             'images'   => 'nullable|array',
             'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
@@ -119,7 +119,7 @@ class CarController extends Controller
             'year'      => 'required|integer|min:1950|max:' . (date('Y') + 1),
             'price'     => 'required|numeric|min:0',
             'vin'       => 'required|string|max:255|unique:cars,vin,' . $car->id,
-            'fuel_type' => 'nullable|string|max:255',
+            'fuel_type' => 'required|in:petrol,diesel,hybrid,electric',
             'images'   => 'nullable|array',
             'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
 
