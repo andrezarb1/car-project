@@ -22,9 +22,8 @@ Route::resource('cars', CarController::class);
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::redirect('/', '/cars');
+
 
 Route::post('/vin/validate', function (Request $request) {
     $request->validate([
