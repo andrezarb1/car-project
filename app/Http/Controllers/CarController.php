@@ -9,45 +9,79 @@ use Illuminate\Support\Str;
 use App\Models\CarImage;
 use App\Services\VinValidationService;
 
-
 class CarController extends Controller
 {
     public function index(Request $request)
-    {
-        // Filtering + sorting (good for marks)
-        $q = Car::query()->with('dealer');
+{
+    // Base query with eager load (for $car->dealer in the view)
+    $q = Car::query()->with('dealer');
 
-        if ($request->filled('make')) {
-            $q->where('make', $request->make);
-        }
-
-        if ($request->filled('fuel_type')) {
-            $q->where('fuel_type', $request->fuel_type);
-        }
-
-        $sort = $request->get('sort', 'created_at');
-        $dir  = $request->get('dir', 'desc');
-
-        if (!in_array($sort, ['price', 'year', 'created_at'])) {
-            $sort = 'created_at';
-        }
-        if (!in_array($dir, ['asc', 'desc'])) {
-            $dir = 'desc';
-        }
-
-        $cars = $q->orderBy($sort, $dir)->paginate(10)->withQueryString();
-
-        // For filter dropdowns
-        $makes = Car::select('make')->distinct()->orderBy('make')->pluck('make');
-        $fuelTypes = Car::select('fuel_type')->whereNotNull('fuel_type')->distinct()->orderBy('fuel_type')->pluck('fuel_type');
-
-        return view('cars.index', compact('cars', 'makes', 'fuelTypes', 'sort', 'dir'));
+    // Filters
+    if ($request->filled('make')) {
+        $q->where('make', $request->make);
     }
+
+    if ($request->filled('fuel_type')) {
+        $q->where('fuel_type', $request->fuel_type);
+    }
+
+    /**
+     * Multi-sort support:
+     * Example: ?sorts=year:desc,price:asc,dealer:asc
+     */
+    $rawSorts = $request->get('sorts', 'created_at:desc');
+
+    // Map safe sort keys to real DB columns
+    $allowed = [
+        'price'      => 'cars.price',
+        'year'       => 'cars.year',
+        'created_at' => 'cars.created_at',
+        'dealer'     => 'dealers.name',
+    ];
+
+    // Parse sorts
+    $sorts = collect(explode(',', $rawSorts))
+        ->map(fn ($s) => trim($s))
+        ->filter()
+        ->map(function ($s) {
+            [$field, $dir] = array_pad(explode(':', $s), 2, 'asc');
+            $dir = strtolower($dir);
+            return ['field' => $field, 'dir' => $dir];
+        })
+        ->filter(fn ($s) => in_array($s['dir'], ['asc', 'desc']));
+
+    // Join dealers only if dealer sorting is being used
+    $needsDealerJoin = $sorts->contains(fn ($s) => $s['field'] === 'dealer');
+
+    if ($needsDealerJoin) {
+        $q->leftJoin('dealers', 'cars.dealer_id', '=', 'dealers.id')
+          ->select('cars.*'); // IMPORTANT so we still get Car models
+    }
+
+    // Apply all sorts in the order user selected
+    foreach ($sorts as $s) {
+        if (!array_key_exists($s['field'], $allowed)) {
+            continue;
+        }
+        $q->orderBy($allowed[$s['field']], $s['dir']);
+    }
+
+    // Stable final ordering (prevents "random" order when equal)
+    $q->orderBy('cars.id', 'desc');
+
+    $cars = $q->paginate(10)->withQueryString();
+
+    // Filter dropdown data
+    $makes = Car::select('make')->distinct()->orderBy('make')->pluck('make');
+    $fuelTypes = Car::select('fuel_type')->whereNotNull('fuel_type')->distinct()->orderBy('fuel_type')->pluck('fuel_type');
+
+    return view('cars.index', compact('cars', 'makes', 'fuelTypes', 'rawSorts'));
+}
+
 
     public function create()
     {
         $dealers = Dealer::orderBy('name')->get();
-
         return view('cars.create', compact('dealers'));
     }
 
@@ -61,8 +95,8 @@ class CarController extends Controller
             'price'     => 'required|numeric|min:0',
             'vin'       => 'required|string|max:255|unique:cars,vin',
             'fuel_type' => 'required|in:petrol,diesel,hybrid,electric',
-            'images'   => 'nullable|array',
-            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
+            'images'    => 'nullable|array',
+            'images.*'  => 'image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $vinService = new VinValidationService();
@@ -75,7 +109,6 @@ class CarController extends Controller
         if (!$apiResult['ok']) {
             return back()->withInput()->withErrors(['vin' => 'VIN failed validation: ' . $apiResult['message']]);
         }
-
 
         $validated['slug'] = $this->uniqueSlug($validated['make'], $validated['model'], $validated['year']);
 
@@ -99,14 +132,12 @@ class CarController extends Controller
     public function show(Car $car)
     {
         $car->load('dealer', 'images');
-
         return view('cars.show', compact('car'));
     }
 
     public function edit(Car $car)
     {
         $dealers = Dealer::orderBy('name')->get();
-
         return view('cars.edit', compact('car', 'dealers'));
     }
 
@@ -120,9 +151,8 @@ class CarController extends Controller
             'price'     => 'required|numeric|min:0',
             'vin'       => 'required|string|max:255|unique:cars,vin,' . $car->id,
             'fuel_type' => 'required|in:petrol,diesel,hybrid,electric',
-            'images'   => 'nullable|array',
-            'images.*' => 'image|mimes:jpg,jpeg,png,webp|max:2048',
-
+            'images'    => 'nullable|array',
+            'images.*'  => 'image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $vinService = new VinValidationService();
@@ -135,7 +165,6 @@ class CarController extends Controller
         if (!$apiResult['ok']) {
             return back()->withInput()->withErrors(['vin' => 'VIN failed validation: ' . $apiResult['message']]);
         }
-
 
         $validated['slug'] = $this->uniqueSlug($validated['make'], $validated['model'], $validated['year'], $car->id);
 

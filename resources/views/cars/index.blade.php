@@ -1,6 +1,57 @@
 @extends('layout')
 
 @section('content')
+@php
+    // Toggle ASC -> DESC -> remove, while preserving existing order of sorts
+    function toggleSort($field) {
+        $current = request('sorts', '');
+        $parts = array_values(array_filter(explode(',', $current)));
+
+        $new = [];
+        $found = false;
+
+        foreach ($parts as $p) {
+            [$f, $d] = array_pad(explode(':', $p), 2, 'asc');
+
+            if ($f === $field) {
+                // cycle: asc -> desc -> remove
+                if ($d === 'asc') {
+                    $new[] = "$f:desc";
+                } elseif ($d === 'desc') {
+                    // remove it (do nothing)
+                }
+                $found = true;
+            } else {
+                $new[] = "$f:$d";
+            }
+        }
+
+        // if not found, add as asc at the end (stacking order)
+        if (!$found) {
+            $new[] = "$field:asc";
+        }
+
+        return implode(',', $new);
+    }
+
+    function sortDir($field) {
+        $current = request('sorts', '');
+        $parts = array_values(array_filter(explode(',', $current)));
+        foreach ($parts as $p) {
+            [$f, $d] = array_pad(explode(':', $p), 2, 'asc');
+            if ($f === $field) return $d;
+        }
+        return null;
+    }
+
+    function sortBadge($field, $label) {
+        $dir = sortDir($field);
+        if (!$dir) return '';
+        $arrow = $dir === 'asc' ? '↑' : '↓';
+        return "<span class=\"badge text-bg-secondary ms-2\">$label $arrow</span>";
+    }
+@endphp
+
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Cars</h2>
     <a class="btn btn-primary" href="{{ route('cars.create') }}">+ Add Car</a>
@@ -24,20 +75,22 @@
             <div class="col-md-4">
                 <label class="form-label">Fuel Type</label>
                 <select name="fuel_type" class="form-select">
-                <option value="">All</option>
-                @php
-                    $fuelOptions = ['petrol', 'diesel', 'hybrid', 'electric'];
-                    $selectedFuel = request('fuel_type');
-                @endphp
-                @foreach($fuelOptions as $fuel)
-                    <option value="{{ $fuel }}" {{ $selectedFuel === $fuel ? 'selected' : '' }}>
-                        {{ ucfirst($fuel) }}
-                    </option>
-                @endforeach
-            </select>
+                    <option value="">All</option>
+                    @php
+                        $fuelOptions = ['petrol', 'diesel', 'hybrid', 'electric'];
+                        $selectedFuel = request('fuel_type');
+                    @endphp
+                    @foreach($fuelOptions as $fuel)
+                        <option value="{{ $fuel }}" {{ $selectedFuel === $fuel ? 'selected' : '' }}>
+                            {{ ucfirst($fuel) }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
 
             <div class="col-md-4 d-flex gap-2">
+                {{-- Preserve sorts when filtering --}}
+                <input type="hidden" name="sorts" value="{{ request('sorts', 'created_at:desc') }}">
                 <button class="btn btn-dark" type="submit">Filter</button>
                 <a class="btn btn-outline-secondary" href="{{ route('cars.index') }}">Reset</a>
             </div>
@@ -50,15 +103,28 @@
         @if($cars->count() === 0)
             <p class="text-muted mb-0">No cars found.</p>
         @else
-            <div class="d-flex justify-content-end mb-2">
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                    {!! sortBadge('year', 'Year') !!}
+                    {!! sortBadge('price', 'Price') !!}
+                    {!! sortBadge('dealer', 'Dealer') !!}
+                </div>
+
                 <div class="btn-group">
                     <a class="btn btn-outline-secondary btn-sm"
-                       href="{{ route('cars.index', array_merge(request()->query(), ['sort'=>'price','dir'=> ($sort==='price' && $dir==='asc') ? 'desc':'asc'])) }}">
+                       href="{{ route('cars.index', array_merge(request()->query(), ['sorts' => toggleSort('price')])) }}">
                         Sort: Price
                     </a>
+
                     <a class="btn btn-outline-secondary btn-sm"
-                       href="{{ route('cars.index', array_merge(request()->query(), ['sort'=>'year','dir'=> ($sort==='year' && $dir==='asc') ? 'desc':'asc'])) }}">
+                       href="{{ route('cars.index', array_merge(request()->query(), ['sorts' => toggleSort('year')])) }}">
                         Sort: Year
+                    </a>
+
+                    <a class="btn btn-outline-secondary btn-sm"
+                       href="{{ route('cars.index', array_merge(request()->query(), ['sorts' => toggleSort('dealer')])) }}">
+                        Sort: Dealer
                     </a>
                 </div>
             </div>
